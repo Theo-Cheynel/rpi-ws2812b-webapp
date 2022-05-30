@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>Bedroom LEDs</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script src="includes/jquery.min.js"></script>
+    <link rel="stylesheet" href="includes/materialdesignicons.min.css">
+    <link rel="stylesheet" href="includes/bootstrap.min.css">
+    <script src="includes/bootstrap.min.js"></script>
+    <link rel="stylesheet" href="includes/classic.min.css"/>
+    <script src="includes/pickr.min.js"></script>
+    <link id="favicon" rel="icon" type="image/x-icon" href="favicon.ico">
+    <link href="includes/sourcecodepro.css" rel="stylesheet">
+    <link href="includes/obitron.css" rel="stylesheet">
+    <script src="script.js" type="module"></script>
+    <link rel="stylesheet" href="style.css">
+  </head>
+  <body>
+    <div class="container">
+      <!-- Rounded switch -->
+      <label class="switch">
+        <input type="checkbox">
+        <span class="slider round"></span>
+      </label>
+
+      <div class="tab">
+        <button class="tablinks" onclick="openTab(event, 'Solid')">Solid</button>
+        <button class="tablinks" onclick="openTab(event, 'Rainbow')">Rainbow</button>
+        <button class="tablinks" onclick="openTab(event, 'Gradient')">Gradient</button>
+      </div>
+
+      <div id="Solid" class="tabcontent">
+        <h3>Solid</h3>
+        <div id="pickerWrapper"></div>
+
+      </div>
+
+      <div id="Rainbow" class="tabcontent">
+        <h3>Rainbow</h3>
+      </div>
+
+      <div id="Gradient" class="tabcontent">
+        <h3>Gradient</h3>
+        <p>Compose your own.</p>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/react@16/umd/react.development.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@16/umd/react-dom.development.js" crossorigin></script>
+  </body>
+
+  <script>
+  function openTab(evt, tabName) {
+    var i, tabcontent, tablinks;
+    tabcontent = document.getElementsByClassName("tabcontent");
+    for (i = 0; i < tabcontent.length; i++) {
+      tabcontent[i].style.display = "none";
+    }
+    tablinks = document.getElementsByClassName("tablinks");
+    for (i = 0; i < tablinks.length; i++) {
+      tablinks[i].className = tablinks[i].className.replace(" active", "");
+    }
+    document.getElementById(tabName).style.display = "block";
+    evt.currentTarget.className += " active";
+  }
+  </script>
+
+  <script type="text/babel">
+    import ColorPicker from '@radial-color-picker/react-color-picker';
+    import '@radial-color-picker/react-color-picker/dist/react-color-picker.min.css';
+
+    function App() {
+        const [color, setColor] = React.useState({
+            hue: 90,
+            saturation: 100,
+            luminosity: 50,
+            alpha: 1,
+        });
+
+        const onInput = hue => {
+            setColor(prev => {
+                return {
+                    ...prev,
+                    hue,
+                };
+            });
+        };
+
+        return <ColorPicker {...color} onInput={onInput} />;
+    }
+
+    ReactDOM.render(<App />, document.getElementById('pickerWrapper'));
+
+  </script>
+
+</html>
