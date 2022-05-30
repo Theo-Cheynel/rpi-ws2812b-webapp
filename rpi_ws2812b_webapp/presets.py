@@ -42,18 +42,18 @@ class Rainbow(threading.Thread):
             if self.stopped:
                 break
             j = (j+1) % (256 / self.speed)
-            for i in range(strip.numPixels()):
+            for i in range(self.strip.numPixels()):
                 if self.on:
-                    strip.setPixelColor(
+                    self.strip.setPixelColor(
                         i,
-                        wheel((int(i * self.width) + j * self.speed) & 255)
+                        wheel(int(int(i * self.width) + j * int(self.speed)) & 255)
                     )
                 else:
-                    strip.setPixelColor(
+                    self.strip.setPixelColor(
                         i,
                         Color(0, 0, 0)
                     )
-            strip.show()
+            self.strip.show()
             time.sleep(1/60)
 
     def stop(self):
@@ -64,24 +64,27 @@ class Rainbow(threading.Thread):
 class Solid(threading.Thread):
     def __init__(self, strip, color, *args, **kwargs):
         super(Solid, self).__init__(*args, **kwargs)
+        print(f"Switching to Solid with color : {color}")
         self.stopped = False
         self.strip = strip
+        self.color = color
+        self.on()
 
     def on(self):
-        for i in range(strip.numPixels()):
-            strip.setPixelColor(
+        for i in range(self.strip.numPixels()):
+            self.strip.setPixelColor(
                 i,
                 Color(*self.color)
             )
-            strip.show()
+        self.strip.show()
 
     def off(self):
         for i in range(strip.numPixels()):
-            strip.setPixelColor(
+            self.strip.setPixelColor(
                 i,
                 Color(0, 0, 0)
             )
-            strip.show()
+        self.strip.show()
 
     def run(self):
         while True:
