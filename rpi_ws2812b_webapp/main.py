@@ -75,11 +75,13 @@ def gradient():
     global led_handler_thread
     if not led_handler_thread.is_started:
         return 'Waiting for previous thread to start !'
-    palette = json.loads(request.get_json()['palette'])
+    palette = request.get_json()['palette']
+    for i in range(len(palette)):
+        palette[i]["color"] = hex_to_rgb(palette[i]["color"])
     def kill_and_create():
         global led_handler_thread
         led_handler_thread.stop().join()
-        led_handler_thread = Rainbow(STRIP, palette)
+        led_handler_thread = Gradient(STRIP, palette)
         led_handler_thread.start()
     threading.Thread(target=kill_and_create).start()
     return 'Rainbow running !'

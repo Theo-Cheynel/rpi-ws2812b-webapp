@@ -52,6 +52,8 @@ class Rainbow(threading.Thread):
                 break
             j = (j + self.speed/100 * 60/1000 * nb_of_cycles) % 1
             for i in range(self.strip.numPixels()):
+                if self.stopped:
+                    break
                 if self.on:
                     degree = i / self.strip.numPixels() * nb_of_cycles + j
                     color = colorsys.hsv_to_rgb(degree % 1, 1., 1.)
@@ -85,6 +87,8 @@ class Solid(threading.Thread):
 
     def on(self):
         for i in range(self.strip.numPixels()):
+            if self.stopped:
+                break
             self.strip.setPixelColor(
                 i,
                 Color(*self.color)
@@ -93,6 +97,8 @@ class Solid(threading.Thread):
 
     def off(self):
         for i in range(self.strip.numPixels()):
+            if self.stopped:
+                break
             self.strip.setPixelColor(
                 i,
                 Color(0, 0, 0)
@@ -162,8 +168,8 @@ class Gradient(threading.Thread):
         self.is_started = True
 
     def clean_palette(self):
-        for i in range(len(palette)):
-            palette[i]["offset"] = float(palette[i]["offset"])
+        for i in range(len(self.palette)):
+            self.palette[i]["offset"] = float(self.palette[i]["offset"])
         self.palette.sort(key=lambda x : x["offset"])
         if self.palette[0]["offset"] > 0:
             self.palette.insert(0, {"offset" : 0, "color" : self.palette[0]["color"]})
@@ -173,19 +179,23 @@ class Gradient(threading.Thread):
     def on(self):
         current_interval = 0
         for i in range(self.strip.numPixels()):
+            if self.stopped:
+                break
             offset = i / self.strip.numPixels()
             while self.palette[current_interval + 1]["offset"] < offset:
                 current_interval += 1
             color = interpolate(
-                self.palette[current_interval]["offset"],
-                self.palette[current_interval + 1]["offset"],
+                self.palette[current_interval]["color"],
+                self.palette[current_interval + 1]["color"],
                 1 - (offset - self.palette[current_interval]["offset"]) / (self.palette[current_interval + 1]["offset"] - self.palette[current_interval]["offset"])
             )
             self.strip.setPixelColor(i, color)
         self.strip.show()
 
     def off(self):
-        for i in range(strip.numPixels()):
+        for i in range(self.strip.numPixels()):
+            if self.stopped:
+                break
             self.strip.setPixelColor(
                 i,
                 Color(0, 0, 0)
