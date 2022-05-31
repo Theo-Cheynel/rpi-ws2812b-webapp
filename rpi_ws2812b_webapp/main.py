@@ -4,7 +4,7 @@ import threading
 from flask import Flask, request
 from rpi_ws281x import PixelStrip, Color
 
-from presets import Rainbow, Solid, SolidCycle
+from presets import Rainbow, Solid, SolidCycle, Gradient
 
 
 ##############################
@@ -89,7 +89,7 @@ def cycle():
     def kill_and_create():
         global led_handler_thread
         led_handler_thread.stop().join()
-        led_handler_thread = Cycle(STRIP, speed)
+        led_handler_thread = SolidCycle(STRIP, speed)
         led_handler_thread.start()
     threading.Thread(target=kill_and_create).start()
     return 'Cycle running !'

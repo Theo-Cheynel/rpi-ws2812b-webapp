@@ -1,4 +1,4 @@
-import time, threading
+import time, threading, colorsys
 
 from rpi_ws281x import PixelStrip, Color
 
@@ -33,8 +33,8 @@ class Rainbow(threading.Thread):
         super(Rainbow, self).__init__(*args, **kwargs)
         self.stopped = False
         self.strip = strip
-        self.width = width
-        self.speed = speed
+        self.width = width  # width is in percent of the LED strip
+        self.speed = speed  # speed of 100 means 1 second to go through the whole strip
 
     def on(self):
         self.on = True
@@ -44,15 +44,18 @@ class Rainbow(threading.Thread):
 
     def run(self):
         j = 0
+        nb_of_cycles = 100 / self.width
         while True:
             if self.stopped:
                 break
-            j = (j+1) % (256 / self.speed)
+            j = (j + self.speed/100 * 60/1000 * nb_of_cycles) % 1
             for i in range(self.strip.numPixels()):
                 if self.on:
+                    degree = i / self.strip.numPixels() * nb_of_cycles + j
+                    color = colorsys.hsv_to_rgb(degree % 1, 1., 1.)
                     self.strip.setPixelColor(
                         i,
-                        wheel(int(int(i * self.width) + j * int(self.speed)) & 255)
+                        Color(int(color[0] * 255), int(color[1] * 255), int(color[2] * 255))
                     )
                 else:
                     self.strip.setPixelColor(
