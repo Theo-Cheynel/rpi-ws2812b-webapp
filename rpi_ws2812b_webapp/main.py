@@ -4,7 +4,7 @@ import threading
 from flask import Flask, request
 from rpi_ws281x import PixelStrip, Color
 
-from presets import Rainbow, Solid, SolidCycle, Gradient
+from presets import Runner
 
 
 ##############################
@@ -27,7 +27,7 @@ STRIP = PixelStrip(LED_COUNT, LED_PIN, LED_FREQ_HZ, LED_DMA, LED_INVERT, LED_BRI
 STRIP.begin()
 
 
-led_handler_thread = Solid(STRIP, (255, 0, 128))
+led_handler_thread = Runner(STRIP)
 led_handler_thread.start()
 
 
@@ -55,74 +55,46 @@ def status():
 @app.route('/rainbow', methods = ['POST'])
 def rainbow():
     """Draw rainbow that uniformly distributes itself across all pixels."""
-    global led_handler_thread
-    if not led_handler_thread.is_started:
-        return 'Waiting for previous thread to start !'
     speed = float(request.get_json()['speed'])
     width = int(request.get_json()['width'])
-    def kill_and_create():
-        global led_handler_thread
-        led_handler_thread.stop().join()
-        led_handler_thread = Rainbow(STRIP, width, speed)
-        led_handler_thread.start()
-    threading.Thread(target=kill_and_create).start()
+    led_handler_thread.change_program('rainbow')
+    led_handler_thread.program.speed = speed
+    led_handler_thread.program.width = width
     return 'Rainbow running !'
 
 
 @app.route('/gradient', methods = ['POST'])
 def gradient():
     """Draw gradient from the user-selected palette"""
-    global led_handler_thread
-    if not led_handler_thread.is_started:
-        return 'Waiting for previous thread to start !'
     palette = request.get_json()['palette']
     for i in range(len(palette)):
         palette[i]["color"] = hex_to_rgb(palette[i]["color"])
-    def kill_and_create():
-        global led_handler_thread
-        led_handler_thread.stop().join()
-        led_handler_thread = Gradient(STRIP, palette)
-        led_handler_thread.start()
-    threading.Thread(target=kill_and_create).start()
-    return 'Rainbow running !'
+    led_handler_thread.change_program('gradient')
+    led_handler_thread.program.palette = palette
+    return 'Gradient running !'
 
 
 @app.route('/cycle', methods = ['POST'])
 def cycle():
     """Draw a solid color that changes through time"""
-    global led_handler_thread
-    if not led_handler_thread.is_started:
-        return 'Waiting for previous thread to start !'
     speed = float(request.get_json()['speed'])
-    def kill_and_create():
-        global led_handler_thread
-        led_handler_thread.stop().join()
-        led_handler_thread = SolidCycle(STRIP, speed)
-        led_handler_thread.start()
-    threading.Thread(target=kill_and_create).start()
+    led_handler_thread.change_program('cycle')
+    led_handler_thread.program.speed = speed
     return 'Cycle running !'
 
 
 @app.route('/solid', methods = ['POST'])
 def solid():
     """Draw a solid color."""
-    global led_handler_thread
-    if not led_handler_thread.is_started:
-        return 'Waiting for previous thread to start !'
     color = hex_to_rgb(str(request.get_json()['color']))
-    def kill_and_create():
-        global led_handler_thread
-        led_handler_thread.stop().join()
-        led_handler_thread = Solid(STRIP, color)
-        led_handler_thread.start()
-    threading.Thread(target=kill_and_create).start()
-    return 'Rainbow running !'
+    led_handler_thread.change_program('solid')
+    led_handler_thread.program.color = color
+    return 'Solid running !'
 
 
 @app.route('/brightness', methods = ['POST'])
 def brightness():
     """Changes the brightness level of the strip"""
-    global led_handler_thread
     brightness = int(request.get_json()['brightness'])
     assert 0 < brightness < 256
     STRIP.setBrightness(brightness)
