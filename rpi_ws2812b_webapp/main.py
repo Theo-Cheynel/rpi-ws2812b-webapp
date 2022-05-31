@@ -56,6 +56,8 @@ def status():
 def rainbow():
     """Draw rainbow that uniformly distributes itself across all pixels."""
     global led_handler_thread
+    if not led_handler_thread.is_started:
+        return 'Waiting for previous thread to start !'
     speed = float(request.get_json()['speed'])
     width = int(request.get_json()['width'])
     def kill_and_create():
@@ -71,6 +73,8 @@ def rainbow():
 def gradient():
     """Draw gradient from the user-selected palette"""
     global led_handler_thread
+    if not led_handler_thread.is_started:
+        return 'Waiting for previous thread to start !'
     palette = json.loads(request.get_json()['palette'])
     def kill_and_create():
         global led_handler_thread
@@ -85,6 +89,8 @@ def gradient():
 def cycle():
     """Draw a solid color that changes through time"""
     global led_handler_thread
+    if not led_handler_thread.is_started:
+        return 'Waiting for previous thread to start !'
     speed = float(request.get_json()['speed'])
     def kill_and_create():
         global led_handler_thread
@@ -99,6 +105,8 @@ def cycle():
 def solid():
     """Draw a solid color."""
     global led_handler_thread
+    if not led_handler_thread.is_started:
+        return 'Waiting for previous thread to start !'
     color = hex_to_rgb(str(request.get_json()['color']))
     def kill_and_create():
         global led_handler_thread

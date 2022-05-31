@@ -31,10 +31,12 @@ def interpolate(color1, color2, factor):
 class Rainbow(threading.Thread):
     def __init__(self, strip, width, speed, *args, **kwargs):
         super(Rainbow, self).__init__(*args, **kwargs)
+        self.is_started = False
         self.stopped = False
         self.strip = strip
         self.width = width  # width is in percent of the LED strip
         self.speed = speed  # speed of 100 means 1 second to go through the whole strip
+        self.is_started = True
 
     def on(self):
         self.on = True
@@ -73,11 +75,13 @@ class Rainbow(threading.Thread):
 class Solid(threading.Thread):
     def __init__(self, strip, color, *args, **kwargs):
         super(Solid, self).__init__(*args, **kwargs)
+        self.is_started = False
         print(f"Switching to Solid with color : {color}")
         self.stopped = False
         self.strip = strip
         self.color = color
         self.on()
+        self.is_started = True
 
     def on(self):
         for i in range(self.strip.numPixels()):
@@ -109,9 +113,11 @@ class Solid(threading.Thread):
 class SolidCycle(threading.Thread):
     def __init__(self, strip, color, *args, **kwargs):
         super(SolidCycle, self).__init__(*args, **kwargs)
+        self.is_started = False
         self.stopped = False
         self.strip = strip
         self.on = True
+        self.is_started = True
 
     def on(self):
         self.on = True
@@ -147,12 +153,13 @@ class SolidCycle(threading.Thread):
 class Gradient(threading.Thread):
     def __init__(self, strip, palette, *args, **kwargs):
         super(Gradient, self).__init__(*args, **kwargs)
-        print(f"Switching to Gradient")
+        self.is_started = False
         self.stopped = False
         self.strip = strip
         self.palette = palette
         self.clean_palette()
         self.on()
+        self.is_started = True
 
     def clean_palette(self):
         for i in range(len(palette)):
