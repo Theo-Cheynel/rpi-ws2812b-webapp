@@ -71,11 +71,13 @@ def rainbow():
 def gradient():
     """Draw gradient from the user-selected palette"""
     global led_handler_thread
-    palette = json.loads(request.get_json()['palette'])
+    palette = request.get_json()['palette']
+    for i in range(len(palette)):
+        palette[i]["color"] = hex_to_rgb(palette[i]["color"])
     def kill_and_create():
         global led_handler_thread
         led_handler_thread.stop().join()
-        led_handler_thread = Rainbow(STRIP, palette)
+        led_handler_thread = Gradient(STRIP, palette)
         led_handler_thread.start()
     threading.Thread(target=kill_and_create).start()
     return 'Rainbow running !'
