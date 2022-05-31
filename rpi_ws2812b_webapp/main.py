@@ -44,7 +44,7 @@ def hex_to_rgb(value):
 app = Flask(
     __name__,
     static_url_path='',
-    static_folder='./static',
+    static_folder='../led-portal/build',
 )
 
 @app.route('/status')
