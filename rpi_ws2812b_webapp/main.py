@@ -47,8 +47,7 @@ app = Flask(
     static_folder='./static',
 )
 
-
-@app.route('/')
+@app.route('/status')
 def status():
     return 'LED Server running'
 
@@ -66,6 +65,34 @@ def rainbow():
         led_handler_thread.start()
     threading.Thread(target=kill_and_create).start()
     return 'Rainbow running !'
+
+
+@app.route('/gradient', methods = ['POST'])
+def gradient():
+    """Draw gradient from the user-selected palette"""
+    global led_handler_thread
+    palette = json.loads(request.form.get('palette'))
+    def kill_and_create():
+        global led_handler_thread
+        led_handler_thread.stop().join()
+        led_handler_thread = Rainbow(STRIP, palette)
+        led_handler_thread.start()
+    threading.Thread(target=kill_and_create).start()
+    return 'Rainbow running !'
+
+
+@app.route('/cycle', methods = ['POST'])
+def cycle():
+    """Draw a solid color that changes through time"""
+    global led_handler_thread
+    speed = float(request.form.get('speed'))
+    def kill_and_create():
+        global led_handler_thread
+        led_handler_thread.stop().join()
+        led_handler_thread = Cycle(STRIP, speed)
+        led_handler_thread.start()
+    threading.Thread(target=kill_and_create).start()
+    return 'Cycle running !'
 
 
 @app.route('/solid', methods = ['POST'])
@@ -92,7 +119,7 @@ def brightness():
     return 'Rainbow running !'
 
 
-@app.route('/off', methods = ['POST'])
+@app.route('/off', methods = ['GET'])
 def off():
     """Turn off the strip"""
     global led_handler_thread
@@ -100,7 +127,7 @@ def off():
     return 'Turning off !'
 
 
-@app.route('/on', methods = ['POST'])
+@app.route('/on', methods = ['GET'])
 def on():
     """Turn on the strip"""
     global led_handler_thread
