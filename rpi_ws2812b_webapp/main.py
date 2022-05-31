@@ -113,6 +113,9 @@ def solid():
 def brightness():
     """Changes the brightness level of the strip"""
     global led_handler_thread
+    print(request.form)
+    print(request.data)
+    return
     brightness = int(request.form.get('brightness'))
     assert 0 < brightness < 256
     strip.setBrightness(brightness)

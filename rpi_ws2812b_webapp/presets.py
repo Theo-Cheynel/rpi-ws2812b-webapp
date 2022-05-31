@@ -85,7 +85,7 @@ class Solid(threading.Thread):
         self.strip.show()
 
     def off(self):
-        for i in range(strip.numPixels()):
+        for i in range(self.strip.numPixels()):
             self.strip.setPixelColor(
                 i,
                 Color(0, 0, 0)
@@ -156,9 +156,9 @@ class Gradient(threading.Thread):
             palette[i]["offset"] = float(palette[i]["offset"])
         self.palette.sort(key=lambda x : x["offset"])
         if self.palette[0]["offset"] > 0:
-            self.palette.insert(0, {"offset" : 0, "color" : self.palette[0]["color"]}])
+            self.palette.insert(0, {"offset" : 0, "color" : self.palette[0]["color"]})
         if self.palette[-1]["offset"] < 1:
-            self.palette.append(0, {"offset" : 1, "color" : self.palette[-1]["color"]}])
+            self.palette.append(0, {"offset" : 1, "color" : self.palette[-1]["color"]})
 
     def on(self):
         current_interval = 0
