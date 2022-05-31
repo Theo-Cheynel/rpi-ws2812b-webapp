@@ -122,31 +122,31 @@ class App extends Component {
   }
 
   send() {
-    let formData = new FormData();
+    let data = {};
     var route = "";
     if (this.state.value == 0) {
       route = "/solid";
-      formData.append('color', this.state.solidColorHex);
+      data['color'] = this.state.solidColorHex;
     }
     if (this.state.value == 1) {
       route = "/rainbow";
-      formData.append('speed', this.state.rainbowSpeed);
-      formData.append('width', this.state.rainbowSize);
+      data['speed'] = this.state.rainbowSpeed;
+      data['width'] = this.state.rainbowSize;
     }
     if (this.state.value == 2) {
       route = "/gradient";
       let palette = this.state.gradientPalette.map((e)=>{return {offset: e.offset, color: rgbToHex(e.color)}})
-      formData.append('palette', JSON.stringify(palette));
-      formData.append('inverted', this.state.gradientInverted);
+      data['palette'] = palette;
+      data['inverted'] = this.state.gradientInverted;
     }
     if (this.state.value == 3) {
       route = "/cycle";
-      formData.append('speed', this.state.cycleSpeed);
+      data['speed'] = this.state.cycleSpeed;
     }
 
     fetch(route, {
-      body: formData,
-      headers: {"Content-Type": "application/x-www-form-urlencoded"},
+      body: data,
+      headers: {"Content-Type": "application/json"},
       method: "POST"
     });
   }
@@ -159,11 +159,11 @@ class App extends Component {
 
   handleSliderBrightnessChange(event: Event, newValue: number | number[]) {
     this.setState({brightness : newValue})
-    let formData = new FormData();
-    formData.append('brightness', Math.floor(newValue * 255 / 100));
+    let data = {};
+    data['brightness'] = Math.floor(newValue * 255 / 100);
     fetch('/brightness', {
-      body: formData,
-      headers: {"Content-Type": "application/x-www-form-urlencoded"},
+      body: data,
+      headers: {"Content-Type": "application/json"},
       method: "POST"
     });
   };

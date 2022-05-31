@@ -56,8 +56,8 @@ def status():
 def rainbow():
     """Draw rainbow that uniformly distributes itself across all pixels."""
     global led_handler_thread
-    speed = float(request.form.get('speed'))
-    width = int(request.form.get('width'))
+    speed = float(request.get_json()['speed'])
+    width = int(request.get_json()['width'])
     def kill_and_create():
         global led_handler_thread
         led_handler_thread.stop().join()
@@ -71,7 +71,7 @@ def rainbow():
 def gradient():
     """Draw gradient from the user-selected palette"""
     global led_handler_thread
-    palette = json.loads(request.form.get('palette'))
+    palette = json.loads(request.get_json()['palette'])
     def kill_and_create():
         global led_handler_thread
         led_handler_thread.stop().join()
@@ -85,7 +85,7 @@ def gradient():
 def cycle():
     """Draw a solid color that changes through time"""
     global led_handler_thread
-    speed = float(request.form.get('speed'))
+    speed = float(request.get_json()['speed'])
     def kill_and_create():
         global led_handler_thread
         led_handler_thread.stop().join()
@@ -99,7 +99,7 @@ def cycle():
 def solid():
     """Draw a solid color."""
     global led_handler_thread
-    color = hex_to_rgb(str(request.form.get('color')))
+    color = hex_to_rgb(str(request.get_json()['color']))
     def kill_and_create():
         global led_handler_thread
         led_handler_thread.stop().join()
@@ -113,10 +113,8 @@ def solid():
 def brightness():
     """Changes the brightness level of the strip"""
     global led_handler_thread
-    print(request.form)
-    print(request.data)
     return
-    brightness = int(request.form.get('brightness'))
+    brightness = int(request.get_json()['brightness'])
     assert 0 < brightness < 256
     strip.setBrightness(brightness)
     return 'Rainbow running !'
