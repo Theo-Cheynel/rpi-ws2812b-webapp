@@ -115,7 +115,8 @@ def brightness():
     global led_handler_thread
     brightness = int(request.get_json()['brightness'])
     assert 0 < brightness < 256
-    strip.setBrightness(brightness)
+    STRIP.setBrightness(brightness)
+    STRIP.show()
     return 'Rainbow running !'
 
 
