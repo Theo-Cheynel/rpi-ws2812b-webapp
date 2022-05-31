@@ -145,7 +145,7 @@ class App extends Component {
     }
 
     fetch(route, {
-      body: data,
+      body: JSON.stringify(data),
       headers: {"Content-Type": "application/json"},
       method: "POST"
     });
@@ -162,7 +162,7 @@ class App extends Component {
     let data = {};
     data['brightness'] = Math.floor(newValue * 255 / 100);
     fetch('/brightness', {
-      body: data,
+      body: JSON.stringify(data),
       headers: {"Content-Type": "application/json"},
       method: "POST"
     });
