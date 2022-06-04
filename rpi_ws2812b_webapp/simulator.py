@@ -1,8 +1,7 @@
-import random
+import random, sys, os, time
 
-import matplotlib.pyplot as plt
 import numpy as np
-import matplotlib.animation as animation
+from scipy import interpolate
 
 
 class PixelStrip:
@@ -11,22 +10,24 @@ class PixelStrip:
         self.brightness = led_brightness
 
     def begin(self):
-        plt.ion()     # turns on interactive mode
-        self.fig, self.ax = plt.subplots()
-        self.ax.set_xlim([0, len(self.pixels)])
-        self.ax.set_ylim([0, 2])
-        self.plot = self.ax.scatter(np.arange(0, len(self.pixels)), np.ones(len(self.pixels)), c=self.pixels / 255.0 * self.brightness / 255.0)
-        plt.show()    # now this should be non-blocking
+        os.system('clear')
 
     def setBrightness(self, brightness):
         self.brightness = brightness
 
     def show(self):
-        plt.cla()
-        self.ax.scatter(np.arange(0, len(self.pixels)), np.ones(len(self.pixels)), c=self.pixels / 255.0 * self.brightness / 255.0)
-        self.fig.canvas.draw()
-        self.fig.canvas.flush_events()
-        plt.pause(0.01)
+        nb_cols = os.get_terminal_size().columns
+        nb_rows = os.get_terminal_size().lines
+        pixel_colors = self.pixels * self.brightness / 255.0
+        f = interpolate.interp1d(np.arange(len(self.pixels)), pixel_colors, axis=0)
+        pixel_colors = f(np.linspace(0, len(self.pixels)-1, nb_cols-1))
+        def rgb(red, green, blue):
+            return 16 + int(red / 256 * 6) * 36 + int(green / 256 * 6) * 6 + int(blue / 256 * 6)
+        str = [f'\x1b[38;5;{rgb(r,g,b)}m' + '█' + '\x1b[0m' for r,g,b in pixel_colors]
+        for i in range(nb_rows):
+            sys.stdout.write("\033[F")
+        for i in range(2):
+            print(''.join(str))
 
     def numPixels(self):
         return len(self.pixels)
@@ -41,11 +42,10 @@ class Color:
 
 
 if __name__ == '__main__':
-    p = PixelStrip(50, 0, 0, 0, 0, 255, 0)
-    i = 0
+    NB_LEDS = 500
+    p = PixelStrip(NB_LEDS, 0, 0, 0, 0, 255, 0)
     while True:
-        i += 1
-        if i % 1000 == 0:
-            for i in range(50):
-                p.setPixelColor(i, Color(random.randint(0, 255), random.randint(0, 255), random.randint(0, 255)))
-            p.show()
+        for j in range(NB_LEDS):
+            p.setPixelColor(j, Color(random.randint(0, 255), random.randint(0, 255), random.randint(0, 255)))
+        p.show()
+        time.sleep(0.1)

@@ -28,7 +28,7 @@ STRIP = PixelStrip(LED_COUNT, LED_PIN, LED_FREQ_HZ, LED_DMA, LED_INVERT, LED_BRI
 
 # Intialize the library (must be called once before other functions).
 STRIP.begin()
-
+STRIP.show()
 
 led_handler_thread = Runner(STRIP)
 led_handler_thread.start()
@@ -55,7 +55,7 @@ def status():
     return 'LED Server running'
 
 @app.route('/values')
-def status():
+def values():
     return led_handler_thread.state
 
 @app.route('/rainbow', methods = ['POST'])
