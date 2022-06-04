@@ -1,6 +1,9 @@
-import time, threading, colorsys
+import time, threading, colorsys, json, os
 
-from rpi_ws281x import PixelStrip, Color
+try:
+    from rpi_ws281x import Color
+except:
+    from simulator import Color
 
 ##############################
 ##     Helper functions     ##
@@ -37,6 +40,45 @@ class Runner(threading.Thread):
         self.gradient = Gradient(strip)
         self.program = self.solid
 
+    def load_state(self):
+        """
+        Loads the state of the runner from the JSON file.
+        """
+        if not os.path.exists('./state.json'):
+            return
+
+        with open('./state.json', 'r') as f:
+            data = json.load(f)
+
+        self.rainbow.set_state(data['rainbow'])
+        self.solid.set_state(data['solid'])
+        self.solid_cycle.set_state(data['solid_cycle'])
+        self.gradient.set_state(data['gradient'])
+
+        self.change_program(data['program'])
+        self.program.on = data['on']
+
+    @property
+    def state(self):
+        """
+        Gets a JSON containing the info about the current state of the runner
+        """
+        return {
+            'program' : self.program.name,
+            'on' : self.program.on,
+            'rainbow' : self.rainbow.state,
+            'solid' : self.solid.state,
+            'solid_cycle' : self.solid_cycle.state,
+            'gradient' : self.gradient.state,
+        }
+
+    def save_state(self):
+        """
+        Saves the current state to the state.json file.
+        """
+        with open('./state.json', 'w') as f:
+            json.dump(self.state, f)
+
     def change_program(self, program):
         programs = {
             'rainbow' : self.rainbow,
@@ -53,11 +95,25 @@ class Runner(threading.Thread):
 
 
 class Rainbow:
+    name = 'rainbow'
+
     def __init__(self, strip, width=1, speed=1, *args, **kwargs):
         self.strip = strip
         self.width = width  # width is in percent of the LED strip
         self.speed = speed  # speed of 100 means 1 second to go through the whole strip
         self.counter = 0
+
+    @property
+    def state(self):
+        return {
+            'width' : self.width,
+            'speed' : self.speed
+        }
+
+    @state.setter
+    def state(self, state):
+        self.width = state['width']
+        self.speed = state['speed']
 
     def run(self):
         nb_of_cycles = 100 / self.width
@@ -79,12 +135,24 @@ class Rainbow:
 
 
 class Solid:
+    name = 'solid'
+
     def __init__(self, strip, color='#ff0000', *args, **kwargs):
         super(Solid, self).__init__(*args, **kwargs)
         print(f"Switching to Solid with color : {color}")
         self.strip = strip
         self.color = color
         self.on = True
+
+    @property
+    def state(self):
+        return {
+            'color' : self.color
+        }
+
+    @state.setter
+    def state(self, state):
+        self.color = state['color']
 
     def run(self):
         for i in range(self.strip.numPixels()):
@@ -102,10 +170,22 @@ class Solid:
 
 
 class SolidCycle:
+    name = 'solid_cycle'
+
     def __init__(self, strip, *args, **kwargs):
         self.strip = strip
         self.on = True
         self.counter = 0
+
+    @property
+    def state(self):
+        return {
+            'speed' : self.speed
+        }
+
+    @state.setter
+    def state(self, state):
+        self.speed = state['speed']
 
     def run(self):
         self.counter = (self.counter + 255/(60*60*2)) % 255
@@ -124,9 +204,25 @@ class SolidCycle:
 
 
 class Gradient:
+    name = 'gradient'
+
     def __init__(self, strip, palette=[{'offset':0.2, 'color':(255,0,0)}, {'offset':0.8, 'color':(0,0,255)}], *args, **kwargs):
         self.strip = strip
         self.palette = palette
+
+    @property
+    def state(self):
+        return {
+            'palette' : self.palette
+        }
+
+    @state.setter
+    def state(self, state):
+        self.palette = state['palette']
+
+    @property
+    def palette(self):
+        return self._palette
 
     @palette.setter
     def palette(self, palette):
@@ -138,10 +234,6 @@ class Gradient:
         if palette[-1]["offset"] < 1:
             palette.append(0, {"offset" : 1, "color" : palette[-1]["color"]})
         self._palette = palette
-
-    @property
-    def palette(self):
-        return self._palette
 
     def run(self):
         current_interval = 0

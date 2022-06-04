@@ -2,7 +2,10 @@ import time
 import threading
 
 from flask import Flask, request
-from rpi_ws281x import PixelStrip, Color
+try:
+    from rpi_ws281x import PixelStrip, Color
+except:
+    from simulator import PixelStrip, Color
 
 from presets import Runner
 
@@ -51,6 +54,9 @@ app = Flask(
 def status():
     return 'LED Server running'
 
+@app.route('/values')
+def status():
+    return led_handler_thread.state
 
 @app.route('/rainbow', methods = ['POST'])
 def rainbow():
