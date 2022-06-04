@@ -112,7 +112,7 @@ def brightness():
 def off():
     """Turn off the strip"""
     global led_handler_thread
-    led_handler_thread.off()
+    led_handler_thread.program.on = False
     return 'Turning off !'
 
 
@@ -120,5 +120,5 @@ def off():
 def on():
     """Turn on the strip"""
     global led_handler_thread
-    led_handler_thread.on()
+    led_handler_thread.program.on = True
     return 'Turning off !'

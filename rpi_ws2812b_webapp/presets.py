@@ -83,7 +83,7 @@ class Runner(threading.Thread):
         programs = {
             'rainbow' : self.rainbow,
             'solid' : self.solid,
-            'solid_cycle' : self.solid_cycle,
+            'cycle' : self.solid_cycle,
             'gradient' : self.gradient,
         }
         self.program = programs[program]
@@ -102,6 +102,7 @@ class Rainbow:
         self.width = width  # width is in percent of the LED strip
         self.speed = speed  # speed of 100 means 1 second to go through the whole strip
         self.counter = 0
+        self.on = True
 
     @property
     def state(self):
@@ -117,7 +118,7 @@ class Rainbow:
 
     def run(self):
         nb_of_cycles = 100 / self.width
-        self.counter = (self.counter + self.speed/100 * 60/1000 * nb_of_cycles) % 1
+        self.counter = (self.counter + self.speed/100 * 60/1000) % 1
         for i in range(self.strip.numPixels()):
             if self.on:
                 degree = i / self.strip.numPixels() * nb_of_cycles + self.counter
@@ -137,7 +138,7 @@ class Rainbow:
 class Solid:
     name = 'solid'
 
-    def __init__(self, strip, color='#ff0000', *args, **kwargs):
+    def __init__(self, strip, color=(255, 0, 0), *args, **kwargs):
         super(Solid, self).__init__(*args, **kwargs)
         print(f"Switching to Solid with color : {color}")
         self.strip = strip
@@ -166,16 +167,16 @@ class Solid:
                     i,
                     Color(0, 0, 0)
                 )
-        time.sleep(1/60)
-
+        self.strip.show()
 
 class SolidCycle:
     name = 'solid_cycle'
 
-    def __init__(self, strip, *args, **kwargs):
+    def __init__(self, strip, speed=1, *args, **kwargs):
         self.strip = strip
         self.on = True
         self.counter = 0
+        self.speed = speed
 
     @property
     def state(self):
@@ -188,13 +189,12 @@ class SolidCycle:
         self.speed = state['speed']
 
     def run(self):
-        self.counter = (self.counter + 255/(60*60*2)) % 255
+        self.counter = (self.counter + self.speed/(60*60*2)) % 1
+        rgb = colorsys.hsv_to_rgb(self.counter, 1, 1)
+        color = Color(int(rgb[0] * 255), int(rgb[1] * 255), int(rgb[2] * 255))
         for i in range(self.strip.numPixels()):
             if self.on:
-                self.strip.setPixelColor(
-                    i,
-                    wheel(int(j) & 255)
-                )
+                self.strip.setPixelColor(i, color)
             else:
                 self.strip.setPixelColor(
                     i,
@@ -209,6 +209,11 @@ class Gradient:
     def __init__(self, strip, palette=[{'offset':0.2, 'color':(255,0,0)}, {'offset':0.8, 'color':(0,0,255)}], *args, **kwargs):
         self.strip = strip
         self.palette = palette
+        self.on = True
+
+    @property
+    def palette(self):
+        return self._palette
 
     @property
     def state(self):
@@ -232,7 +237,7 @@ class Gradient:
         if palette[0]["offset"] > 0:
             palette.insert(0, {"offset" : 0, "color" : palette[0]["color"]})
         if palette[-1]["offset"] < 1:
-            palette.append(0, {"offset" : 1, "color" : palette[-1]["color"]})
+            palette.append({"offset" : 1, "color" : palette[-1]["color"]})
         self._palette = palette
 
     def run(self):
