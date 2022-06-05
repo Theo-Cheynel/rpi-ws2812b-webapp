@@ -1,0 +1,1 @@
+{"program": "solid_cycle", "on": true, "rainbow": {"width": 97, "speed": 3.0}, "solid": {"color": [0, 34, 255]}, "solid_cycle": {"speed": 7.0}, "gradient": {"palette": [{"offset": 0.0, "color": [255, 8, 0]}, {"offset": 0.373, "color": [43, 255, 0]}, {"offset": 0.634, "color": [0, 21, 255]}, {"offset": 1.0, "color": [126, 32, 207]}]}, "brightness": 255}

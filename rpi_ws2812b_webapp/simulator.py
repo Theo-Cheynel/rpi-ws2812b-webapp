@@ -15,6 +15,9 @@ class PixelStrip:
     def setBrightness(self, brightness):
         self.brightness = brightness
 
+    def getBrightness(self):
+        return self.brightness
+
     def show(self):
         nb_cols = os.get_terminal_size().columns
         nb_rows = os.get_terminal_size().lines

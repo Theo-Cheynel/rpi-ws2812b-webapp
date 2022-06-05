@@ -1,7 +1,6 @@
-import time
-import threading
+import time, threading
 
-from flask import Flask, request
+from flask import Flask, request, redirect, json, url_for
 try:
     from rpi_ws281x import PixelStrip, Color
 except:
@@ -32,6 +31,7 @@ STRIP.show()
 
 led_handler_thread = Runner(STRIP)
 led_handler_thread.start()
+led_handler_thread.load_state()
 
 
 def hex_to_rgb(value):
@@ -50,13 +50,22 @@ app = Flask(
     static_folder='../led-portal/build',
 )
 
+@app.route('/')
+def hello():
+    return redirect(url_for('static', filename='index.html'))
+
 @app.route('/status')
 def status():
     return 'LED Server running'
 
-@app.route('/values')
-def values():
-    return led_handler_thread.state
+@app.route('/state')
+def state():
+    response = app.response_class(
+        response=json.dumps(led_handler_thread.state),
+        status=200,
+        mimetype='application/json'
+    )
+    return response
 
 @app.route('/rainbow', methods = ['POST'])
 def rainbow():
@@ -66,6 +75,7 @@ def rainbow():
     led_handler_thread.change_program('rainbow')
     led_handler_thread.program.speed = speed
     led_handler_thread.program.width = width
+    led_handler_thread.save_state()
     return 'Rainbow running !'
 
 
@@ -77,6 +87,7 @@ def gradient():
         palette[i]["color"] = hex_to_rgb(palette[i]["color"])
     led_handler_thread.change_program('gradient')
     led_handler_thread.program.palette = palette
+    led_handler_thread.save_state()
     return 'Gradient running !'
 
 
@@ -86,6 +97,7 @@ def cycle():
     speed = float(request.get_json()['speed'])
     led_handler_thread.change_program('cycle')
     led_handler_thread.program.speed = speed
+    led_handler_thread.save_state()
     return 'Cycle running !'
 
 
@@ -95,6 +107,7 @@ def solid():
     color = hex_to_rgb(str(request.get_json()['color']))
     led_handler_thread.change_program('solid')
     led_handler_thread.program.color = color
+    led_handler_thread.save_state()
     return 'Solid running !'
 
 
@@ -103,22 +116,22 @@ def brightness():
     """Changes the brightness level of the strip"""
     brightness = int(request.get_json()['brightness'])
     assert 0 < brightness < 256
-    STRIP.setBrightness(brightness)
-    STRIP.show()
+    led_handler_thread.set_brightness(brightness)
+    led_handler_thread.save_state()
     return 'Rainbow running !'
 
 
 @app.route('/off', methods = ['GET'])
 def off():
     """Turn off the strip"""
-    global led_handler_thread
-    led_handler_thread.program.on = False
+    led_handler_thread.on = False
+    led_handler_thread.save_state()
     return 'Turning off !'
 
 
 @app.route('/on', methods = ['GET'])
 def on():
     """Turn on the strip"""
-    global led_handler_thread
-    led_handler_thread.program.on = True
+    led_handler_thread.on = True
+    led_handler_thread.save_state()
     return 'Turning off !'

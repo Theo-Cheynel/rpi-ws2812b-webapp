@@ -1,9 +1,12 @@
 import time, threading, colorsys, json, os
 
+from scipy import interpolate
+import numpy as np
 try:
     from rpi_ws281x import Color
 except:
     from simulator import Color
+
 
 ##############################
 ##     Helper functions     ##
@@ -21,12 +24,6 @@ def wheel(pos):
         return Color(0, int(pos * 3), int(255 - pos * 3))
 
 
-def interpolate(color1, color2, factor):
-    """Interpolates between two colors"""
-    return Color(
-        *[int(color1[i] * factor + color2[i] * (1 - factor)) for i in range(3)]
-    )
-
 ##############################
 ##         Presets          ##
 ##############################
@@ -34,11 +31,14 @@ def interpolate(color1, color2, factor):
 class Runner(threading.Thread):
     def __init__(self, strip, *args, **kwargs):
         super(Runner, self).__init__(*args, **kwargs)
-        self.rainbow = Rainbow(strip)
-        self.solid = Solid(strip)
-        self.solid_cycle = SolidCycle(strip)
-        self.gradient = Gradient(strip)
+        self.rainbow = Rainbow(strip, self)
+        self.solid = Solid(strip, self)
+        self.solid_cycle = SolidCycle(strip, self)
+        self.gradient = Gradient(strip, self)
         self.program = self.solid
+        self.on = True
+        self.strip = strip
+        self.brightness = strip.getBrightness()
 
     def load_state(self):
         """
@@ -50,13 +50,14 @@ class Runner(threading.Thread):
         with open('./state.json', 'r') as f:
             data = json.load(f)
 
-        self.rainbow.set_state(data['rainbow'])
-        self.solid.set_state(data['solid'])
-        self.solid_cycle.set_state(data['solid_cycle'])
-        self.gradient.set_state(data['gradient'])
+        self.rainbow.state = data['rainbow']
+        self.solid.state = data['solid']
+        self.solid_cycle.state = data['solid_cycle']
+        self.gradient.state = data['gradient']
+        self.brightness = data['brightness']
 
         self.change_program(data['program'])
-        self.program.on = data['on']
+        self.on = data['on']
 
     @property
     def state(self):
@@ -65,11 +66,12 @@ class Runner(threading.Thread):
         """
         return {
             'program' : self.program.name,
-            'on' : self.program.on,
+            'on' : self.on,
             'rainbow' : self.rainbow.state,
             'solid' : self.solid.state,
             'solid_cycle' : self.solid_cycle.state,
             'gradient' : self.gradient.state,
+            'brightness' : self.brightness
         }
 
     def save_state(self):
@@ -88,6 +90,11 @@ class Runner(threading.Thread):
         }
         self.program = programs[program]
 
+    def set_brightness(self, brightness):
+        self.brightness = brightness
+        self.strip.setBrightness(brightness)
+        self.strip.show()
+
     def run(self):
         while True:
             self.program.run()
@@ -97,12 +104,12 @@ class Runner(threading.Thread):
 class Rainbow:
     name = 'rainbow'
 
-    def __init__(self, strip, width=1, speed=1, *args, **kwargs):
+    def __init__(self, strip, runner, width=1, speed=1, *args, **kwargs):
         self.strip = strip
+        self.runner = runner
         self.width = width  # width is in percent of the LED strip
         self.speed = speed  # speed of 100 means 1 second to go through the whole strip
         self.counter = 0
-        self.on = True
 
     @property
     def state(self):
@@ -120,7 +127,7 @@ class Rainbow:
         nb_of_cycles = 100 / self.width
         self.counter = (self.counter + self.speed/100 * 60/1000) % 1
         for i in range(self.strip.numPixels()):
-            if self.on:
+            if self.runner.on:
                 degree = i / self.strip.numPixels() * nb_of_cycles + self.counter
                 color = colorsys.hsv_to_rgb(degree % 1, 1., 1.)
                 self.strip.setPixelColor(
@@ -138,12 +145,12 @@ class Rainbow:
 class Solid:
     name = 'solid'
 
-    def __init__(self, strip, color=(255, 0, 0), *args, **kwargs):
+    def __init__(self, strip, runner, color=(255, 0, 0), *args, **kwargs):
         super(Solid, self).__init__(*args, **kwargs)
         print(f"Switching to Solid with color : {color}")
         self.strip = strip
+        self.runner = runner
         self.color = color
-        self.on = True
 
     @property
     def state(self):
@@ -157,7 +164,7 @@ class Solid:
 
     def run(self):
         for i in range(self.strip.numPixels()):
-            if self.on:
+            if self.runner.on:
                 self.strip.setPixelColor(
                     i,
                     Color(*self.color)
@@ -172,9 +179,9 @@ class Solid:
 class SolidCycle:
     name = 'solid_cycle'
 
-    def __init__(self, strip, speed=1, *args, **kwargs):
+    def __init__(self, strip, runner, speed=1, *args, **kwargs):
         self.strip = strip
-        self.on = True
+        self.runner = runner
         self.counter = 0
         self.speed = speed
 
@@ -193,7 +200,7 @@ class SolidCycle:
         rgb = colorsys.hsv_to_rgb(self.counter, 1, 1)
         color = Color(int(rgb[0] * 255), int(rgb[1] * 255), int(rgb[2] * 255))
         for i in range(self.strip.numPixels()):
-            if self.on:
+            if self.runner.on:
                 self.strip.setPixelColor(i, color)
             else:
                 self.strip.setPixelColor(
@@ -206,10 +213,10 @@ class SolidCycle:
 class Gradient:
     name = 'gradient'
 
-    def __init__(self, strip, palette=[{'offset':0.2, 'color':(255,0,0)}, {'offset':0.8, 'color':(0,0,255)}], *args, **kwargs):
+    def __init__(self, strip, runner, palette=[{'offset':0.2, 'color':(255,0,0)}, {'offset':0.8, 'color':(0,0,255)}], *args, **kwargs):
         self.strip = strip
+        self.runner = runner
         self.palette = palette
-        self.on = True
 
     @property
     def palette(self):
@@ -241,17 +248,15 @@ class Gradient:
         self._palette = palette
 
     def run(self):
-        current_interval = 0
+        positions = list(c["offset"] for c in self.palette)
+        colors = list(c["color"] for c in self.palette)
+        f = interpolate.interp1d(positions, colors, axis=0)
+        print(min(positions), max(positions))
+        print(np.arange(self.strip.numPixels()).min(), np.arange(self.strip.numPixels()).max())
+        strip_colors = f(np.linspace(0, 1, self.strip.numPixels()))
         for i in range(self.strip.numPixels()):
-            offset = i / self.strip.numPixels()
-            while self.palette[current_interval + 1]["offset"] < offset:
-                current_interval += 1
-            color = interpolate(
-                self.palette[current_interval]["color"],
-                self.palette[current_interval + 1]["color"],
-                1 - (offset - self.palette[current_interval]["offset"]) / (self.palette[current_interval + 1]["offset"] - self.palette[current_interval]["offset"])
-            )
-            if self.on:
+            if self.runner.on:
+                color = Color(int(strip_colors[i][0]), int(strip_colors[i][1]), int(strip_colors[i][2]))
                 self.strip.setPixelColor(i, color)
             else:
                 self.strip.setPixelColor(
