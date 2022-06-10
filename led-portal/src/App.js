@@ -150,7 +150,7 @@ class App extends Component {
     .then(response => {console.log(response); return response.json()})
     .then(data => {
       console.log(data)
-      const values = {"solid" : 0, "rainbow" : 1, "gradient": 2, "solid_cycle" : 3}
+      const values = {"solid" : 0, "rainbow" : 1, "gradient": 2, "cycle" : 3}
       const color = rgb2hsv(data.solid.color[0]/255., data.solid.color[1]/255., data.solid.color[2]/255.)
       const state = {
         value : values[data.program],
@@ -162,7 +162,7 @@ class App extends Component {
         rainbowSpeed: data.rainbow.speed,
         //gradientInverted
         gradientPalette: data.gradient.palette.map(e=>{return {offset:e.offset, color:`rgb(${e.color[0]}, ${e.color[1]}, ${e.color[2]})`}}),
-        cycleSpeed: data.solid_cycle.speed,
+        cycleSpeed: data.cycle.speed,
       }
       console.log('state', state)
       this.setState(state)
