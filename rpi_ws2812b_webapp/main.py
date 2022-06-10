@@ -1,4 +1,5 @@
 import time, threading
+from functools import wraps
 
 from flask import Flask, request, redirect, json, url_for
 try:
@@ -40,6 +41,15 @@ def hex_to_rgb(value):
     return tuple(int(value[i:i + lv // 3], 16) for i in range(0, lv, lv // 3))
 
 
+def stop_all_alarms(name):
+    def decorator(func):
+        @wraps(func)
+        def wrapped(*args, **kwargs):
+            led_handler_thread.stop_alarm()
+            return func(*args, **kwargs)
+        return wrapped
+    return decorator
+
 ##############################
 ##        Flask App         ##
 ##############################
@@ -59,6 +69,7 @@ def status():
     return 'LED Server running'
 
 @app.route('/state')
+@stop_all_alarms('state')
 def state():
     response = app.response_class(
         response=json.dumps(led_handler_thread.state),
@@ -68,6 +79,7 @@ def state():
     return response
 
 @app.route('/rainbow', methods = ['POST'])
+@stop_all_alarms('rainbow')
 def rainbow():
     """Draw rainbow that uniformly distributes itself across all pixels."""
     speed = float(request.get_json()['speed'])
@@ -80,6 +92,7 @@ def rainbow():
 
 
 @app.route('/gradient', methods = ['POST'])
+@stop_all_alarms('gradient')
 def gradient():
     """Draw gradient from the user-selected palette"""
     palette = request.get_json()['palette']
@@ -92,6 +105,7 @@ def gradient():
 
 
 @app.route('/cycle', methods = ['POST'])
+@stop_all_alarms('cycle')
 def cycle():
     """Draw a solid color that changes through time"""
     speed = float(request.get_json()['speed'])
@@ -102,6 +116,7 @@ def cycle():
 
 
 @app.route('/solid', methods = ['POST'])
+@stop_all_alarms('solid')
 def solid():
     """Draw a solid color."""
     color = hex_to_rgb(str(request.get_json()['color']))
@@ -112,6 +127,7 @@ def solid():
 
 
 @app.route('/brightness', methods = ['POST'])
+@stop_all_alarms('brightness')
 def brightness():
     """Changes the brightness level of the strip"""
     brightness = int(request.get_json()['brightness'])
@@ -122,6 +138,7 @@ def brightness():
 
 
 @app.route('/off', methods = ['GET'])
+@stop_all_alarms('off')
 def off():
     """Turn off the strip"""
     led_handler_thread.on = False
@@ -130,8 +147,14 @@ def off():
 
 
 @app.route('/on', methods = ['GET'])
+@stop_all_alarms('on')
 def on():
     """Turn on the strip"""
     led_handler_thread.on = True
     led_handler_thread.save_state()
     return 'Turning off !'
+
+@app.route('/stop_alarm', methods = ['GET'])
+@stop_all_alarms('stop_alarm')
+def stop_alarms():
+    pass

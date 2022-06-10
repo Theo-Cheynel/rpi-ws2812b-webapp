@@ -1,4 +1,4 @@
-import time, threading, colorsys, json, os
+import time, threading, colorsys, json, os, math
 
 from scipy import interpolate
 import numpy as np
@@ -25,7 +25,7 @@ def wheel(pos):
 
 
 ##############################
-##         Presets          ##
+##       Main runner        ##
 ##############################
 
 class Runner(threading.Thread):
@@ -33,12 +33,14 @@ class Runner(threading.Thread):
         super(Runner, self).__init__(*args, **kwargs)
         self.rainbow = Rainbow(strip, self)
         self.solid = Solid(strip, self)
-        self.solid_cycle = SolidCycle(strip, self)
+        self.cycle = SolidCycle(strip, self)
         self.gradient = Gradient(strip, self)
         self.program = self.solid
         self.on = True
         self.strip = strip
         self.brightness = strip.getBrightness()
+        self.alarms = [{"hour" : 11, "min" : 44, "type":"flash"}]
+        self.current_alarm = None
 
     def load_state(self):
         """
@@ -52,12 +54,13 @@ class Runner(threading.Thread):
 
         self.rainbow.state = data['rainbow']
         self.solid.state = data['solid']
-        self.solid_cycle.state = data['solid_cycle']
+        self.cycle.state = data['cycle']
         self.gradient.state = data['gradient']
         self.brightness = data['brightness']
 
         self.change_program(data['program'])
         self.on = data['on']
+        self.alarms = data['alarms']
 
     @property
     def state(self):
@@ -69,9 +72,10 @@ class Runner(threading.Thread):
             'on' : self.on,
             'rainbow' : self.rainbow.state,
             'solid' : self.solid.state,
-            'solid_cycle' : self.solid_cycle.state,
+            'cycle' : self.cycle.state,
             'gradient' : self.gradient.state,
-            'brightness' : self.brightness
+            'brightness' : self.brightness,
+            'alarms' : self.alarms,
         }
 
     def save_state(self):
@@ -85,7 +89,7 @@ class Runner(threading.Thread):
         programs = {
             'rainbow' : self.rainbow,
             'solid' : self.solid,
-            'cycle' : self.solid_cycle,
+            'cycle' : self.cycle,
             'gradient' : self.gradient,
         }
         self.program = programs[program]
@@ -95,11 +99,110 @@ class Runner(threading.Thread):
         self.strip.setBrightness(brightness)
         self.strip.show()
 
+    def stop_alarm(self):
+        if self.current_alarm is not None:
+            self.current_alarm.stop()
+
     def run(self):
         while True:
-            self.program.run()
-            time.sleep(1/60)
+            no_alarm = True
 
+            # If there is an alarm that has not yet been turned off
+            if self.current_alarm is not None:
+                if self.current_alarm.is_running:
+                    self.current_alarm.run()
+                    time.sleep(1/60)
+                    no_alarm = False
+
+            # Check for any other alarm
+            else:
+                current_time = time.localtime()
+                for alarm in self.alarms:
+                    if current_time.tm_hour == alarm['hour'] and current_time.tm_min == alarm['min']:
+                        alarms_dict = {
+                            'fade' : AlarmFade,
+                            'flash' : AlarmFlash,
+                            'wave' : AlarmWave
+                        }
+                        print('ALARM')
+                        alarm_runner = alarms_dict[alarm['type']](self.strip, self)
+                        self.current_alarm = alarm_runner
+                        no_alarm = False
+                        break
+
+            # If no alarms are running, run a normal program
+            if no_alarm:
+                self.program.run()
+                time.sleep(1/60)
+
+
+##############################
+##          Alarms          ##
+##############################
+
+class AlarmWave:
+    def __init__(self, strip, runner, *args, **kwargs):
+        self.strip = strip
+        self.runner = runner
+        self.is_running = True
+        self.counter = 0
+        self.prev_brightness = runner.brightness
+        for i in range(self.strip.numPixels()):
+            self.strip.setPixelColor(i, Color(255, 255, 255))
+
+    def run(self):
+        self.counter += 1
+        brightness = int((math.sin(self.counter / 30)+ 1) / 2 * 255)
+        self.runner.set_brightness(brightness)
+
+    def stop(self):
+        self.is_running = False
+        self.runner.set_brightness(self.prev_brightness)
+
+
+class AlarmFlash:
+    def __init__(self, strip, runner, *args, **kwargs):
+        self.strip = strip
+        self.runner = runner
+        self.is_running = True
+        self.counter = 0
+        self.prev_brightness = runner.brightness
+        for i in range(self.strip.numPixels()):
+            self.strip.setPixelColor(i, Color(255, 255, 255))
+
+    def run(self):
+        self.counter += 1
+        brightness = 255 if self.counter % 10 < 4 and self.counter % 100  < 30 else 0
+        self.runner.set_brightness(brightness)
+
+    def stop(self):
+        self.is_running = False
+        self.runner.set_brightness(self.prev_brightness)
+
+
+class AlarmFade:
+    def __init__(self, strip, runner, *args, **kwargs):
+        self.strip = strip
+        self.runner = runner
+        self.is_running = True
+        self.counter = 0
+        self.prev_brightness = runner.brightness
+        for i in range(self.strip.numPixels()):
+            self.strip.setPixelColor(i, Color(255, 255, 255))
+
+    def run(self):
+        self.counter += 1
+        brightness = min(255, self.counter / 3600 * 255)
+        self.runner.set_brightness(brightness)
+
+    def stop(self):
+        self.is_running = False
+        self.runner.set_brightness(self.prev_brightness)
+
+
+##############################
+##         Presets          ##
+##############################
 
 class Rainbow:
     name = 'rainbow'
@@ -110,6 +213,44 @@ class Rainbow:
         self.width = width  # width is in percent of the LED strip
         self.speed = speed  # speed of 100 means 1 second to go through the whole strip
         self.counter = 0
+
+    @property
+    def state(self):
+        return {
+            'width' : self.width,
+            'speed' : self.speed
+        }
+
+    @state.setter
+    def state(self, state):
+        self.width = state['width']
+        self.speed = state['speed']
+
+    def run(self):
+        nb_of_cycles = 100 / self.width
+        self.counter = (self.counter + self.speed/100 * 60/1000) % 1
+        for i in range(self.strip.numPixels()):
+            if self.runner.on:
+                degree = i / self.strip.numPixels() * nb_of_cycles + self.counter
+                color = colorsys.hsv_to_rgb(degree % 1, 1., 1.)
+                self.strip.setPixelColor(
+                    i,
+                    Color(int(color[0] * 255), int(color[1] * 255), int(color[2] * 255))
+                )
+            else:
+                self.strip.setPixelColor(
+                    i,
+                    Color(0, 0, 0)
+                )
+        self.strip.show()
+
+
+class Alarm:
+    name = 'alarm'
+
+    def __init__(self, strip, runner, *args, **kwargs):
+        self.strip = strip
+        self.runner = runner
 
     @property
     def state(self):
@@ -177,7 +318,7 @@ class Solid:
         self.strip.show()
 
 class SolidCycle:
-    name = 'solid_cycle'
+    name = 'cycle'
 
     def __init__(self, strip, runner, speed=1, *args, **kwargs):
         self.strip = strip
