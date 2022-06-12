@@ -194,7 +194,7 @@ class App extends Component {
       route = "/cycle";
       data['speed'] = this.state.cycleSpeed;
     }
-    if (this.state.value == 3) {
+    if (this.state.value == 4) {
       route = "/music";
     }
 
