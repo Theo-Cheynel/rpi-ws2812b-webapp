@@ -5,7 +5,7 @@ import spotipy
 from spotipy.oauth2 import SpotifyOAuth
 from scipy import interpolate
 import numpy as np
-from numba import jit, jitclass, njit, prange
+from numba import jit, njit, prange
 
 try:
     from rpi_ws281x import Color, PixelStrip
