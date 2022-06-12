@@ -5,7 +5,7 @@ import time
 
 scope = "user-read-currently-playing,"
 
-sp = spotipy.Spotify(auth_manager=SpotifyOAuth(scope=scope))
+sp = spotipy.Spotify(auth_manager=SpotifyOAuth(scope=scope, open_browser=False))
 id = None
 starting_timestamp = None
 analysis = None
