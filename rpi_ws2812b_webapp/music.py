@@ -5,11 +5,12 @@ import spotipy
 from spotipy.oauth2 import SpotifyOAuth
 from scipy import interpolate
 import numpy as np
+from numba import jit, jitclass, njit, prange
 
 try:
-    from rpi_ws281x import Color
+    from rpi_ws281x import Color, PixelStrip
 except:
-    from simulator import Color
+    from simulator import Color, PixelStrip
 
 
 class Music:
@@ -90,6 +91,29 @@ class Music:
 # position-dependent time offset
 # time-dependent color
 # time-dependent color
+@njit(parallel=True)
+def searchsorted_parallel(a, b):
+    res = np.empty(len(b), np.intp)
+    for i in prange(len(b)):
+        res[i] = np.searchsorted(a, b[i])
+    return res
+
+@jit(nopython=True)
+def motion_function(nb_strip, indices, time):
+    return (np.abs(indices / nb_strip - .5) * 2.2)**2 * 1000
+
+@jit(nopython=True)
+def color_function2(beats_times, positions, times):
+    # Find the nearest beat with a time < current time
+    indices = searchsorted_parallel(beats_times, times) - 1
+    beat_times = beats_times[indices]
+
+    brightnesses = np.where(times - beat_times < 250, (250 - (times - beat_times))/250, np.zeros_like(times))
+    hues = (indices % 8) / 8
+    print(len(positions))
+    colors = np.ones((len(positions), 3))#np.array([colorsys.hsv_to_rgb(hue, 1., 1.) for hue in hues])
+    colors = colors*255*brightnesses.reshape(500, 1)
+    return colors.astype(np.uint8)
 
 
 class LightComposer1:
@@ -98,35 +122,26 @@ class LightComposer1:
         self.strip = strip
         self.music_runner = music_runner
 
-    def motion_function(self, index, time):
+    def motion_function(self, indices, time):
         """
         Returns how late this pixel is (in milliseconds)
         compared to the current time in the song
         """
         #return abs(index - self.strip.numPixels() / 2) * 4
-        return (abs(index / self.strip.numPixels() - .5) * 2.2)**2 * 1000
+        return motion_function(self.strip.numPixels(), indices, time)
         #return (abs(index / self.strip.numPixels() - (math.sin(time / 5000) + 1) / 2 ) * 2)**2 * 1000
 
         #return 0
 
-
-    def color_function2(self, position, time):
+    def color_function2(self, positions, times):
         """
         Returns the hue based on the time into the song (in milliseconds)
         """
-        color = (0, 0, 0)
-        # Find the
-        if self.music_runner.beats is not None:
-            # Find the nearest beat with a time < current time
-            index = self.music_runner.beats["times"].searchsorted(time, "right") - 1
-            beat_time = self.music_runner.beats["times"][index]
-
-            brightness = (250 - (time - beat_time))/250 if time - beat_time < 250 else 0 #min(1, max(0, (time - beat_time)/10))
-            hue = (index % 8) / 8
-            color = colorsys.hsv_to_rgb(hue, 1., 1.)
-            color = (int(255*color[0]*brightness), int(255*color[1]*brightness), int(255*color[2]*brightness))
-        return color
-
+        if self.music_runner.beats is None:
+            return np.zeros((self.strip.numPixels(), 3))
+        value = color_function2(self.music_runner.beats["times"], positions, times)
+        print("vale", value)
+        return value
 
     def color_function3(self, position, time):
         """
@@ -214,17 +229,17 @@ class LightComposer1:
         current_position = time.time() * 1000 - self.music_runner.starting_timestamp
         brightness = 255
 
+        indices = np.arange(self.strip.numPixels())
+        lates = self.motion_function(indices, current_position)
+        colors = self.color_function2(indices, current_position - lates)
+
         for i in range(self.strip.numPixels()):
             if self.music_runner.is_playing and id is not None:
-
-                late = self.motion_function(i, current_position)
-                color = self.color_function2(i, current_position - late)
-
                 self.strip.setPixelColor(
                     i,
                     Color(
-                        int(color[0] * brightness / 255),
-                        int(color[1] * brightness / 255),
-                        int(color[2] * brightness / 255),
+                        int(colors[i][0] * brightness / 255),
+                        int(colors[i][1] * brightness / 255),
+                        int(colors[i][2] * brightness / 255),
                     )
                 )
