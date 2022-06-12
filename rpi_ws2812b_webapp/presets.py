@@ -358,8 +358,6 @@ class Gradient:
         positions = list(c["offset"] for c in self.palette)
         colors = list(c["color"] for c in self.palette)
         f = interpolate.interp1d(positions, colors, axis=0)
-        print(min(positions), max(positions))
-        print(np.arange(self.strip.numPixels()).min(), np.arange(self.strip.numPixels()).max())
         strip_colors = f(np.linspace(0, 1, self.strip.numPixels()))
         for i in range(self.strip.numPixels()):
             if self.runner.on:
