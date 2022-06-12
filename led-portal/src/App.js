@@ -150,7 +150,7 @@ class App extends Component {
     .then(response => {console.log(response); return response.json()})
     .then(data => {
       console.log(data)
-      const values = {"solid" : 0, "rainbow" : 1, "gradient": 2, "cycle" : 3}
+      const values = {"solid" : 0, "rainbow" : 1, "gradient": 2, "cycle" : 3, "music" : 4}
       const color = rgb2hsv(data.solid.color[0]/255., data.solid.color[1]/255., data.solid.color[2]/255.)
       const state = {
         value : values[data.program],
@@ -193,6 +193,9 @@ class App extends Component {
     if (this.state.value == 3) {
       route = "/cycle";
       data['speed'] = this.state.cycleSpeed;
+    }
+    if (this.state.value == 3) {
+      route = "/music";
     }
 
     fetch(route, {
@@ -297,6 +300,7 @@ class App extends Component {
                   <Tab label="Rainbow" {...a11yProps(1)} />
                   <Tab label="Gradient" {...a11yProps(2)} />
                   <Tab label="Cycle" {...a11yProps(3)} />
+                  <Tab label="Music" {...a11yProps(4)} />
                 </Tabs>
               </Box>
               <TabPanel value={this.state.value} index={0}>
@@ -344,6 +348,8 @@ class App extends Component {
                   </Typography>
                   <Slider value={this.state.cycleSpeed} min={1} max={100} defaultValue={50} aria-label="Speed" size="small" valueLabelDisplay="auto" onChange={this.handleCycleSliderSpeedChange}/>
                 </div>
+              </TabPanel>
+              <TabPanel value={this.state.value} index={4}>
               </TabPanel>
             </Card>
           </div>

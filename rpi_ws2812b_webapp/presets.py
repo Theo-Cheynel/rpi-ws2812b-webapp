@@ -7,6 +7,7 @@ try:
 except:
     from simulator import Color
 
+from music import Music
 
 ##############################
 ##     Helper functions     ##
@@ -35,6 +36,7 @@ class Runner(threading.Thread):
         self.solid = Solid(strip, self)
         self.cycle = SolidCycle(strip, self)
         self.gradient = Gradient(strip, self)
+        self.music = Music(strip, self)
         self.program = self.solid
         self.on = True
         self.strip = strip
@@ -91,6 +93,7 @@ class Runner(threading.Thread):
             'solid' : self.solid,
             'cycle' : self.cycle,
             'gradient' : self.gradient,
+            'music' : self.music
         }
         self.program = programs[program]
 
@@ -245,44 +248,6 @@ class Rainbow:
         self.strip.show()
 
 
-class Alarm:
-    name = 'alarm'
-
-    def __init__(self, strip, runner, *args, **kwargs):
-        self.strip = strip
-        self.runner = runner
-
-    @property
-    def state(self):
-        return {
-            'width' : self.width,
-            'speed' : self.speed
-        }
-
-    @state.setter
-    def state(self, state):
-        self.width = state['width']
-        self.speed = state['speed']
-
-    def run(self):
-        nb_of_cycles = 100 / self.width
-        self.counter = (self.counter + self.speed/100 * 60/1000) % 1
-        for i in range(self.strip.numPixels()):
-            if self.runner.on:
-                degree = i / self.strip.numPixels() * nb_of_cycles + self.counter
-                color = colorsys.hsv_to_rgb(degree % 1, 1., 1.)
-                self.strip.setPixelColor(
-                    i,
-                    Color(int(color[0] * 255), int(color[1] * 255), int(color[2] * 255))
-                )
-            else:
-                self.strip.setPixelColor(
-                    i,
-                    Color(0, 0, 0)
-                )
-        self.strip.show()
-
-
 class Solid:
     name = 'solid'
 
@@ -316,6 +281,7 @@ class Solid:
                     Color(0, 0, 0)
                 )
         self.strip.show()
+
 
 class SolidCycle:
     name = 'cycle'

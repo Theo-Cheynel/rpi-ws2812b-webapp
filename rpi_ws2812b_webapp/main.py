@@ -126,6 +126,15 @@ def solid():
     return 'Solid running !'
 
 
+@app.route('/music', methods = ['POST'])
+@stop_all_alarms('music')
+def solid():
+    """Draw a solid color."""
+    led_handler_thread.change_program('music')
+    led_handler_thread.save_state()
+    return 'Music running !'
+
+
 @app.route('/brightness', methods = ['POST'])
 @stop_all_alarms('brightness')
 def brightness():
