@@ -128,7 +128,7 @@ def solid():
 
 @app.route('/music', methods = ['POST'])
 @stop_all_alarms('music')
-def solid():
+def music():
     """Draw a solid color."""
     led_handler_thread.change_program('music')
     led_handler_thread.save_state()
