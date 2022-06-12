@@ -124,7 +124,7 @@ class LightComposer1:
             brightness = (250 - (time - beat_time))/250 if time - beat_time < 250 else 0 #min(1, max(0, (time - beat_time)/10))
             hue = (index % 8) / 8
             color = colorsys.hsv_to_rgb(hue, 1., 1.)
-            color = (255*color[0]*brightness, 255*color[1]*brightness, 255*color[2]*brightness)
+            color = (int(255*color[0]*brightness), int(255*color[1]*brightness), int(255*color[2]*brightness))
         return color
 
 
