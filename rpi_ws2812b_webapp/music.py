@@ -104,10 +104,10 @@ class LightComposer1:
         compared to the current time in the song
         """
         #return abs(index - self.strip.numPixels() / 2) * 4
-        #return (abs(index / self.strip.numPixels() - .5) * 2.2)**2 * 1000
+        return (abs(index / self.strip.numPixels() - .5) * 2.2)**2 * 1000
         #return (abs(index / self.strip.numPixels() - (math.sin(time / 5000) + 1) / 2 ) * 2)**2 * 1000
 
-        return 0
+        #return 0
 
 
     def color_function2(self, position, time):
@@ -121,8 +121,10 @@ class LightComposer1:
             index = self.music_runner.beats["times"].searchsorted(time, "right") - 1
             beat_time = self.music_runner.beats["times"][index]
 
-            value = 1 if time - beat_time < 80 else 0 #min(1, max(0, (time - beat_time)/10))
-            color = (255*value, 255*value, 255*value)
+            brightness = (250 - (time - beat_time))/250 if time - beat_time < 250 else 0 #min(1, max(0, (time - beat_time)/10))
+            hue = (index % 8) / 8
+            color = colorsys.hsv_to_rgb(hue, 1., 1.)
+            color = (255*color[0]*brightness, 255*color[1]*brightness, 255*color[2]*brightness)
         return color
 
 
@@ -172,7 +174,7 @@ class LightComposer1:
         return color
 
 
-    def run(self):
+    def run2(self):
         if self.music_runner.is_playing and self.music_runner.segments is not None:
             current_position = time.time() * 1000 - self.music_runner.starting_timestamp
             brightness = 255
@@ -208,7 +210,7 @@ class LightComposer1:
                     )
 
 
-    def run2(self):
+    def run(self):
         current_position = time.time() * 1000 - self.music_runner.starting_timestamp
         brightness = 255
 
@@ -216,7 +218,7 @@ class LightComposer1:
             if self.music_runner.is_playing and id is not None:
 
                 late = self.motion_function(i, current_position)
-                color = self.color_function(i, current_position - late)
+                color = self.color_function2(i, current_position - late)
 
                 self.strip.setPixelColor(
                     i,
