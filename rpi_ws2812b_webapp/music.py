@@ -189,7 +189,7 @@ class LightComposer1:
         return color
 
 
-    def run2(self):
+    def run(self):
         if self.music_runner.is_playing and self.music_runner.segments is not None:
             current_position = time.time() * 1000 - self.music_runner.starting_timestamp
             brightness = 255
@@ -225,7 +225,7 @@ class LightComposer1:
                     )
 
 
-    def run(self):
+    def run2(self):
         current_position = time.time() * 1000 - self.music_runner.starting_timestamp
         brightness = 255
 
