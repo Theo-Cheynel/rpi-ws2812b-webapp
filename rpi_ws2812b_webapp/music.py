@@ -196,7 +196,7 @@ class LightComposer1:
             for i in range(self.strip.numPixels()):
 
                     #brightness = brightnesses[i] * min(1, max(0, 1 - (current_position - beat_time) / 1000))
-                    brightness = 255 * min(1, max(0, 1 - (current_position - beat_time) / 1000))
+                    brightness = min(1, max(0, 1 - (current_position - beat_time) / 300))
 
                     self.strip.setPixelColor(
                         i,
